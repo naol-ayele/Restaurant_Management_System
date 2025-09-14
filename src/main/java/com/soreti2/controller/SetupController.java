@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/setup")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:3000")
 public class SetupController {
 
     private final UserService userService;
