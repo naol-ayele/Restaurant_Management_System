@@ -25,7 +25,7 @@ public class SetupController {
             @RequestPart("nationalId") MultipartFile nationalIdFile) throws Exception {
 
         // Force role to ADMIN regardless of what the DTO has
-        request.setRole(Role.ADMIN);
+        request.setRole(String.valueOf(Role.ADMIN));
 
         // Check if any Admin exists
         if (userService.adminExists()) {

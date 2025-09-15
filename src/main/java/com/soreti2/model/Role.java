@@ -6,5 +6,5 @@ public enum Role {
     CASHIER,
     CHEF,
     BARTENDER,
-    WAITER
+    WAITER;
 }

@@ -1,5 +1,6 @@
 package com.soreti2.service;
 
+import com.soreti2.dto.UpdateEmployeeRequest;
 import com.soreti2.dto.UserRegistrationRequest;
 import com.soreti2.dto.UserResponse;
 import com.soreti2.exception.ResourceAlreadyExistsException;
@@ -28,7 +29,6 @@ public class UserService {
         if (userRepository.existsByPhone(request.getPhone())) {
             throw new ResourceAlreadyExistsException("Phone number already exists");
         }
-
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ResourceAlreadyExistsException("Email already exists");
         }
@@ -38,12 +38,15 @@ public class UserService {
             storedFileName = storageService.storeFile(nationalIdFile);
         }
 
+        // Convert role string to Role enum
+        Role roleEnum = Role.valueOf(request.getRole().toUpperCase());
+
         User user = User.builder()
                 .fullname(request.getFullname())
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .role(roleEnum)
                 .nationalId(storedFileName)
                 .build();
 
@@ -52,15 +55,14 @@ public class UserService {
     }
 
     // UPDATE EMPLOYEE
-    public UserResponse updateUser(Long id, UserRegistrationRequest request, MultipartFile nationalIdFile) throws IOException {
+    public UserResponse updateUser(Long id, UpdateEmployeeRequest request, MultipartFile nationalIdFile) throws IOException {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
 
-        // Check for unique email/phone if changed
+        // Check unique email/phone if changed
         if (!existing.getEmail().equals(request.getEmail()) && userRepository.existsByEmail(request.getEmail())) {
             throw new ResourceAlreadyExistsException("Email already exists");
         }
-
         if (!existing.getPhone().equals(request.getPhone()) && userRepository.existsByPhone(request.getPhone())) {
             throw new ResourceAlreadyExistsException("Phone number already exists");
         }
@@ -68,12 +70,17 @@ public class UserService {
         existing.setFullname(request.getFullname());
         existing.setEmail(request.getEmail());
         existing.setPhone(request.getPhone());
-        existing.setRole(request.getRole());
 
+        // Convert role string to Role enum and set
+        Role roleEnum = Role.valueOf(request.getRole().toUpperCase());
+        existing.setRole(roleEnum);
+
+        // Optional password update
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             existing.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
+        // Optional national ID file
         if (nationalIdFile != null) {
             String storedFileName = storageService.storeFile(nationalIdFile);
             existing.setNationalId(storedFileName);

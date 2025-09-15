@@ -2,8 +2,10 @@ package com.soreti2.controller;
 
 import com.soreti2.dto.OrderHistoryResponse;
 import com.soreti2.dto.UserRegistrationRequest;
+import com.soreti2.dto.UpdateEmployeeRequest;
 import com.soreti2.dto.UserResponse;
 import com.soreti2.exception.AdminAlreadyExistsException;
+import com.soreti2.model.Role;
 import com.soreti2.service.OrderService;
 import com.soreti2.service.StorageService;
 import com.soreti2.service.UserService;
@@ -18,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000") // Frontend URL
+@CrossOrigin(origins = "http://localhost:3000")
 public class AdminController {
 
     private final UserService userService;
@@ -32,8 +34,11 @@ public class AdminController {
             @RequestPart(value = "nationalId", required = false) MultipartFile nationalIdFile
     ) throws Exception {
 
+        // Convert String to Role enum
+        Role roleEnum = Role.valueOf(request.getRole().toUpperCase());
+
         // Prevent creating multiple admins
-        if (request.getRole() == com.soreti2.model.Role.ADMIN && userService.adminExists()) {
+        if (roleEnum == Role.ADMIN && userService.adminExists()) {
             throw new AdminAlreadyExistsException("An admin user already exists");
         }
 
@@ -53,9 +58,14 @@ public class AdminController {
     @PutMapping("/employees/{id}")
     public ResponseEntity<UserResponse> updateEmployee(
             @PathVariable Long id,
-            @RequestPart("user") @Valid UserRegistrationRequest request,
+            @RequestPart("user") @Valid UpdateEmployeeRequest request,
             @RequestPart(value = "nationalId", required = false) MultipartFile nationalIdFile
     ) throws Exception {
+
+        // Convert String role to enum
+        Role roleEnum = Role.valueOf(request.getRole().toUpperCase());
+
+        // Optionally, you can validate admin constraints here if needed
 
         UserResponse updated = userService.updateUser(id, request, nationalIdFile);
         return ResponseEntity.ok(updated);

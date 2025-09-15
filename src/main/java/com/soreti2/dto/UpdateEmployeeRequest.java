@@ -2,7 +2,7 @@ package com.soreti2.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-public class UserRegistrationRequest {
+public class UpdateEmployeeRequest {
 
     @NotBlank(message = "Fullname must not be blank")
     private String fullname;
@@ -13,8 +13,7 @@ public class UserRegistrationRequest {
     @NotBlank(message = "Phone must not be blank")
     private String phone;
 
-    @NotBlank(message = "Password must not be blank")
-    private String password;
+    private String password; // optional for update
 
     @NotBlank(message = "Role must not be blank")
     private String role; // keep as String
