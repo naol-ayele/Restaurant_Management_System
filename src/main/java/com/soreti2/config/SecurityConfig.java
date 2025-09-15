@@ -39,7 +39,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000")); // your frontend URL
+        config.setAllowedOrigins(List.of("http://localhost:3000")); // frontend URL
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
@@ -51,10 +51,10 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // Disable CSRF
+        // Disable CSRF (for API / JWT)
         http.csrf(csrf -> csrf.disable());
 
-        // Use stateless session (JWT)
+        // Stateless session (JWT)
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         // Apply CORS configuration
@@ -62,22 +62,28 @@ public class SecurityConfig {
 
         // Authorization rules
         http.authorizeHttpRequests(auth -> auth
+                // Public endpoints
                 .requestMatchers(
                         "/api/auth/**",
                         "/h2-console/**",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
                         "/api/setup/admin",
-                        "/api/menu/qr/**"
+                        "/api/menu/qr/**",
+                        "/uploads/**"           // ✅ make uploads publicly accessible
                 ).permitAll()
+
+                // Role-based endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/manager/**").hasRole("MANAGER")
                 .requestMatchers("/api/kitchen/**").hasAnyRole("CHEF", "BARTENDER")
                 .requestMatchers("/api/waiter/**").hasRole("WAITER")
+
+                // All other endpoints require authentication
                 .anyRequest().authenticated()
         );
 
-        // Add JWT filter
+        // Add JWT filter before UsernamePasswordAuthenticationFilter
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
