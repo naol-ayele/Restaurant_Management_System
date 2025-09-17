@@ -29,4 +29,3 @@ public class KitchenController {
         return ResponseEntity.ok("Item status updated");
     }
 }
-

@@ -4,4 +4,3 @@ public enum ItemType {
     FOOD,
     DRINK
 }
-
