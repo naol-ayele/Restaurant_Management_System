@@ -14,7 +14,7 @@ public class JwtUtil {
     private static final String SECRET = "mySuperSecretKeyForJwtShouldBeAtLeast32Chars!";
     private final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    private final long expirationMs = 1000 * 60 * 60; // 1 hour
+    private final long expirationMs = 1000 * 60 * 60 * 24; // 1 hour
 
     // ✅ Generate token with email + role
     public String generateToken(String email, String role) {

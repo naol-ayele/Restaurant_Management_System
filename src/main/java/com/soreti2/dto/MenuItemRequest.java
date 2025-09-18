@@ -1,20 +1,26 @@
 package com.soreti2.dto;
 
-import com.soreti2.model.ItemType;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class MenuItemRequest {
-    @NotBlank
     private String name;
+    private String description;
+    private Double price;
+    private String currency;
+    private String quality;
+    private String itemType;
 
-    private ItemType type;
-
-    @Min(0)
-    private double price;
-
-    @Min(0)
-    private int stock;
+    private String cbeName;
+    private String cbeNumber;
+    private String coopName;
+    private String coopNumber;
+    private String awashName;
+    private String awashNumber;
+    private String teleBirrName;
+    private String teleBirrNumber;
 }

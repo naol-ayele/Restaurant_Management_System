@@ -1,6 +1,5 @@
 package com.soreti2.service.impl;
 
-
 import com.soreti2.service.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,7 +16,7 @@ public class StorageServiceImpl implements StorageService {
 
     public StorageServiceImpl() {
         try {
-            Files.createDirectories(storageLocation); // create folder if not exist
+            Files.createDirectories(storageLocation);
         } catch (IOException e) {
             log.error("Could not create upload folder", e);
             throw new RuntimeException("Could not create upload folder", e);
@@ -30,13 +29,11 @@ public class StorageServiceImpl implements StorageService {
             throw new RuntimeException("Cannot store empty file");
         }
 
-        // Clean file name
         String fileName = System.currentTimeMillis() + "_" + Paths.get(file.getOriginalFilename()).getFileName();
         Path targetLocation = storageLocation.resolve(fileName);
-
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
-        return fileName; // store this path or filename in DB
+        return fileName;
     }
 
     @Override

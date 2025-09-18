@@ -6,9 +6,9 @@ import com.soreti2.dto.OrderUpdateRequest;
 import com.soreti2.exception.ResourceNotFoundException;
 import com.soreti2.model.*;
 import com.soreti2.repository.*;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,9 +28,10 @@ public class OrderService {
 
     // Waiter creates an order
     public Order createOrder(int tableNumber, Long waiterId, Map<Long, Integer> itemQuantities) {
-        User waiter = userRepository.findById(waiterId).orElseThrow();
-        List<OrderItem> orderItems = new ArrayList<>();
+        User waiter = userRepository.findById(waiterId)
+                .orElseThrow(() -> new ResourceNotFoundException("Waiter not found"));
 
+        List<OrderItem> orderItems = new ArrayList<>();
         Order order = Order.builder()
                 .tableNumber(tableNumber)
                 .waiter(waiter)
@@ -40,20 +41,18 @@ public class OrderService {
 
         for (Map.Entry<Long, Integer> entry : itemQuantities.entrySet()) {
             MenuItem menuItem = menuItemRepository.findById(entry.getKey())
-                    .orElseThrow(() -> new RuntimeException("Menu item not found"));
-            if (menuItem.getStock() < entry.getValue()) {
-                throw new RuntimeException(menuItem.getName() + " is out of stock!");
-            }
-            menuItem.setStock(menuItem.getStock() - entry.getValue());
-            menuItemRepository.save(menuItem);
+                    .orElseThrow(() -> new ResourceNotFoundException("Menu item not found"));
+
+            int quantity = entry.getValue();
 
             OrderItem orderItem = OrderItem.builder()
                     .menuItem(menuItem)
-                    .quantity(entry.getValue())
-                    .price(menuItem.getPrice() * entry.getValue())
+                    .quantity(quantity)
+                    .price(menuItem.getPrice() * quantity)
                     .status(ItemStatus.PENDING)
                     .order(order)
                     .build();
+
             orderItemRepository.save(orderItem);
             orderItems.add(orderItem);
         }
@@ -69,7 +68,7 @@ public class OrderService {
 
     private void notifyKitchen(List<OrderItem> items, User waiter) {
         for (OrderItem item : items) {
-            User toUser = item.getMenuItem().getType() == ItemType.FOOD ? findChef() : findBartender();
+            User toUser = item.getMenuItem().getItemType() == ItemType.FOOD ? findChef() : findBartender();
             Notification notification = Notification.builder()
                     .fromUser(waiter)
                     .toUser(toUser)
@@ -83,18 +82,20 @@ public class OrderService {
     private User findChef() {
         return userRepository.findAll().stream()
                 .filter(u -> u.getRole() == Role.CHEF)
-                .findFirst().orElseThrow(() -> new RuntimeException("No chef available"));
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No chef available"));
     }
 
     private User findBartender() {
         return userRepository.findAll().stream()
                 .filter(u -> u.getRole() == Role.BARTENDER)
-                .findFirst().orElseThrow(() -> new RuntimeException("No bartender available"));
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No bartender available"));
     }
 
-
     public void updateItemStatus(Long itemId, ItemStatus status, Long userId) {
-        OrderItem item = orderItemRepository.findById(itemId).orElseThrow();
+        OrderItem item = orderItemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order item not found"));
         item.setStatus(status);
         orderItemRepository.save(item);
         updateOrderStatus(item.getOrder());
@@ -104,7 +105,6 @@ public class OrderService {
             wsNotificationService.sendNotification(item.getOrder().getWaiter().getId(), msg);
         }
     }
-
 
     private void updateOrderStatus(Order order) {
         boolean allReady = order.getItems().stream()
@@ -119,26 +119,27 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-    // Waiter serves order
     public void serveOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow();
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
         if (order.getStatus() != OrderStatus.READY) {
             throw new RuntimeException("Order not ready to serve");
         }
+
         order.setStatus(OrderStatus.SERVED);
         orderRepository.save(order);
     }
 
-    // Get notifications for a user
     public List<Notification> getNotifications(Long userId) {
         return notificationRepository.findAll().stream()
                 .filter(n -> n.getToUser().getId().equals(userId) && !n.isRead())
                 .collect(Collectors.toList());
     }
 
-    // Mark notification as read
     public void markNotificationRead(Long notificationId) {
-        Notification notification = notificationRepository.findById(notificationId).orElseThrow();
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
         notification.setRead(true);
         notificationRepository.save(notification);
     }
@@ -167,26 +168,22 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        // You could also check status here (e.g., only allow removal if not PAID)
-        if ("PAID".equals(order.getStatus())) {
+        if (order.getStatus() == OrderStatus.PAID) {
             throw new IllegalStateException("Cannot remove a paid order");
         }
 
         orderRepository.delete(order);
     }
 
-
     @Transactional
     public OrderResponse updateOrder(Long orderId, OrderUpdateRequest request) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        // Update table number if provided
         if (request.getTableNumber() != null) {
             order.setTableNumber(request.getTableNumber());
         }
 
-        // Update order items if provided
         if (request.getItems() != null && !request.getItems().isEmpty()) {
             for (Map.Entry<Long, Integer> entry : request.getItems().entrySet()) {
                 Long menuItemId = entry.getKey();
@@ -216,20 +213,15 @@ public class OrderService {
                 .tableNumber(order.getTableNumber())
                 .waiterName(order.getWaiter().getFullname())
                 .status(order.getStatus())
-                .items(
-                        order.getItems().stream()
-                                .map(i -> OrderResponse.OrderItemResponse.builder()
-                                        .id(i.getId())
-                                        .menuItemName(i.getMenuItem().getName())
-                                        .quantity(i.getQuantity())
-                                        .price(i.getMenuItem().getPrice() * i.getQuantity())
-                                        .status(i.getStatus())
-                                        .build()
-                                )
-                                .toList()
-                )
+                .items(order.getItems().stream()
+                        .map(i -> OrderResponse.OrderItemResponse.builder()
+                                .id(i.getId())
+                                .menuItemName(i.getMenuItem().getName())
+                                .quantity(i.getQuantity())
+                                .price(i.getMenuItem().getPrice() * i.getQuantity())
+                                .status(i.getStatus())
+                                .build())
+                        .toList())
                 .build();
     }
-
-
 }

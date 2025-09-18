@@ -2,14 +2,14 @@ package com.soreti2.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "menu_items")
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class MenuItem {
 
     @Id
@@ -18,19 +18,27 @@ public class MenuItem {
 
     private String name;
 
+    @Column(length = 1000)
+    private String description;
+
+    private Double price;
+
+    private String currency;
+
+    private String quality;
+
     @Enumerated(EnumType.STRING)
-    private ItemType type; // FOOD or DRINK
+    private ItemType itemType;
 
-    private double price;
+    private String image; // save file path
 
-    private int stock; // quantity available
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void onCreate() { createdAt = LocalDateTime.now(); }
-
-    @PreUpdate
-    public void onUpdate() { updatedAt = LocalDateTime.now(); }
+    // Payment info
+    private String cbeName;
+    private String cbeNumber;
+    private String coopName;
+    private String coopNumber;
+    private String awashName;
+    private String awashNumber;
+    private String teleBirrName;
+    private String teleBirrNumber;
 }
