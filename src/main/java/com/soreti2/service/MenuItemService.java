@@ -20,7 +20,7 @@ public class MenuItemService {
     private final MenuItemRepository menuItemRepository;
     private final StorageService storageService;
 
-    // ✅ Create
+    // Create Menu Item
     public MenuItemResponse createMenuItem(MenuItemRequest request, MultipartFile imageFile) {
         String fileName = storeImage(imageFile);
 
@@ -28,9 +28,9 @@ public class MenuItemService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .price(request.getPrice())
-                .currency(request.getCurrency())
+                .currency(request.getCurrency() != null ? request.getCurrency() : "ETB")
                 .quality(request.getQuality())
-                .itemType(ItemType.valueOf(request.getItemType().toUpperCase()))
+                .itemType(parseItemType(request.getItemType()))
                 .image(fileName)
                 .cbeName(request.getCbeName())
                 .cbeNumber(request.getCbeNumber())
@@ -45,7 +45,7 @@ public class MenuItemService {
         return mapToResponse(menuItemRepository.save(item));
     }
 
-    // ✅ Update
+    // Update Menu Item
     public MenuItemResponse updateMenuItem(Long id, MenuItemRequest request, MultipartFile imageFile) {
         MenuItem item = menuItemRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Menu item not found"));
@@ -55,12 +55,14 @@ public class MenuItemService {
         item.setName(request.getName());
         item.setDescription(request.getDescription());
         item.setPrice(request.getPrice());
-        item.setCurrency(request.getCurrency());
+        item.setCurrency(request.getCurrency() != null ? request.getCurrency() : "ETB");
         item.setQuality(request.getQuality());
-        item.setItemType(ItemType.valueOf(request.getItemType().toUpperCase()));
+        item.setItemType(parseItemType(request.getItemType()));
+
         if (fileName != null) {
             item.setImage(fileName);
         }
+
         item.setCbeName(request.getCbeName());
         item.setCbeNumber(request.getCbeNumber());
         item.setCoopName(request.getCoopName());
@@ -73,7 +75,7 @@ public class MenuItemService {
         return mapToResponse(menuItemRepository.save(item));
     }
 
-    // ✅ Get all
+    // Get all menu items
     public List<MenuItemResponse> getAllMenuItems() {
         return menuItemRepository.findAll()
                 .stream()
@@ -81,7 +83,7 @@ public class MenuItemService {
                 .collect(Collectors.toList());
     }
 
-    // ✅ Delete
+    // Delete menu item
     public void deleteMenuItem(Long id) {
         if (!menuItemRepository.existsById(id)) {
             throw new RuntimeException("Menu item not found");
@@ -89,7 +91,7 @@ public class MenuItemService {
         menuItemRepository.deleteById(id);
     }
 
-    // ✅ Helper – map entity → response
+    // Map entity → response
     private MenuItemResponse mapToResponse(MenuItem item) {
         return MenuItemResponse.builder()
                 .id(item.getId())
@@ -98,7 +100,7 @@ public class MenuItemService {
                 .price(item.getPrice())
                 .currency(item.getCurrency())
                 .quality(item.getQuality())
-                .itemType(item.getItemType().name())
+                .itemType(item.getItemType().name()) // String for frontend
                 .image(item.getImage())
                 .cbeName(item.getCbeName())
                 .cbeNumber(item.getCbeNumber())
@@ -111,7 +113,7 @@ public class MenuItemService {
                 .build();
     }
 
-    // ✅ Helper – handle file upload safely
+    // Store image
     private String storeImage(MultipartFile imageFile) {
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
@@ -121,5 +123,14 @@ public class MenuItemService {
             }
         }
         return null;
+    }
+
+    // Parse item type safely
+    private ItemType parseItemType(String type) {
+        try {
+            return type != null ? ItemType.valueOf(type.toUpperCase()) : ItemType.BREAKFAST;
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid item type: " + type);
+        }
     }
 }

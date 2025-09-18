@@ -1,7 +1,9 @@
 package com.soreti2.model;
 
 public enum ItemType {
-    FOOD,
-    DRINK,
-    DESSERT
+    BREAKFAST,
+    LUNCH,
+    DINNER,
+    DRINKS,
+    DESSERTS
 }

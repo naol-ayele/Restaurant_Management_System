@@ -2,6 +2,7 @@ package com.soreti2.dto;
 
 import com.soreti2.model.ItemStatus;
 import com.soreti2.model.OrderStatus;
+import com.soreti2.model.ItemType;
 import lombok.Builder;
 import lombok.Data;
 
@@ -24,6 +25,7 @@ public class OrderResponse {
     public static class OrderItemResponse {
         private Long id;
         private String menuItemName;
+        private ItemType category;  // Added category based on ItemType enum
         private int quantity;
         private double price;
         private ItemStatus status;

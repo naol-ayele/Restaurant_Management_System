@@ -60,7 +60,7 @@ public class OrderService {
         order.setItems(orderItems);
         orderRepository.save(order);
 
-        // Notify Chef/Bartender
+        // Notify Kitchen based on ItemType
         notifyKitchen(orderItems, waiter);
 
         return order;
@@ -68,7 +68,16 @@ public class OrderService {
 
     private void notifyKitchen(List<OrderItem> items, User waiter) {
         for (OrderItem item : items) {
-            User toUser = item.getMenuItem().getItemType() == ItemType.FOOD ? findChef() : findBartender();
+            ItemType type = item.getMenuItem().getItemType();
+
+            User toUser;
+            // Drinks go to Bartender, all food types go to Chef
+            if (type == ItemType.DRINKS) {
+                toUser = findBartender();
+            } else {
+                toUser = findChef();
+            }
+
             Notification notification = Notification.builder()
                     .fromUser(waiter)
                     .toUser(toUser)
