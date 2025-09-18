@@ -7,6 +7,7 @@ import com.soreti2.service.MenuItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,10 +45,18 @@ public class ManagerController {
         return ResponseEntity.ok(response);
     }
 
-    // ✅ Get all menu items
+    // Manager CRUD
     @GetMapping("/menu")
-    public ResponseEntity<List<MenuItemResponse>> getAllMenuItems() {
-        return ResponseEntity.ok(menuItemService.getAllMenuItems());
+    @PreAuthorize("hasRole('MANAGER')")
+    public List<MenuItemResponse> getMenuForManager() {
+        return menuItemService.getAllMenuItems();
+    }
+
+    // ✅ Waiter READ ONLY
+    @GetMapping("/waiter/menu")
+    @PreAuthorize("hasAnyRole('WAITER','MANAGER')")
+    public List<MenuItemResponse> getMenuForWaiter() {
+        return menuItemService.getAllMenuItems();
     }
 
     // ✅ Delete menu item
